@@ -1,79 +1,102 @@
-<!--
-Copyright (C) 2024 The Qt Company Ltd.
-SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only
--->
-
-<!doctype html>
-<html lang="en-us">
-  <head>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-
-    <!--Set visual viewport size for mobile devices to the device size,
-        witch results in a scale of 1 and a 1:1 mapping between CSS pixels
-        and Qt device independent pixels. -->
     <meta name="viewport" content="width=device-width, height=device-height, user-scalable=0"/>
-
     <title>Synera: Synergy Auto-Arena</title>
     <style>
-      /* Make the html body cover the entire (visual) viewport with no scroll bars. */
-      html, body { padding: 0; margin: 0; overflow: hidden; height: 100% }
-      #screen { width: 100%; height: 100%; }
-    </style>
-  </head>
-  <body onload="init()">
-    <figure style="overflow:visible;" id="qtspinner">
-      <center style="margin-top:1.5em; line-height:150%">
-        <img src="qtlogo.svg" width="320" height="200" style="display:block"></img>
-        <strong>Qt for WebAssembly: SyneraPhase1</strong>
-        <div id="qtstatus"></div>
-        <noscript>JavaScript is disabled. Please enable JavaScript to use this application.</noscript>
-      </center>
-    </figure>
-    <div id="screen"></div>
+        html, body { padding: 0; margin: 0; overflow: hidden; height: 100% }
+        #screen { width: 100%; height: 100%; }
 
-    <script type="text/javascript">
-        async function init()
-        {
-            const spinner = document.querySelector('#qtspinner');
-            const screen = document.querySelector('#screen');
-            const status = document.querySelector('#qtstatus');
-
-            const showUi = (ui) => {
-                [spinner, screen].forEach(element => element.style.display = 'none');
-                if (screen === ui)
-                    screen.style.position = 'default';
-                ui.style.display = 'block';
-            }
-
-            try {
-                showUi(spinner);
-                status.innerHTML = 'Loading...';
-
-                const instance = await qtLoad({
-                    qt: {
-                        onLoaded: () => showUi(screen),
-                        onExit: exitData =>
-                        {
-                            status.innerHTML = 'Application exit';
-                            status.innerHTML +=
-                                exitData.code !== undefined ? ` with code ${exitData.code}` : '';
-                            status.innerHTML +=
-                                exitData.text !== undefined ? ` (${exitData.text})` : '';
-                            showUi(spinner);
-                        },
-                        entryFunction: window.SyneraPhase1_entry,
-                        containerElements: [screen],
-                        
-                    }
-                });
-            } catch (e) {
-                console.error(e);
-                console.error(e.stack);
-            }
+        /* Fullscreen button */
+        #fullscreen-btn {
+            display: none;
+            position: fixed; bottom: 12px; right: 12px;
+            z-index: 999;
+            background: rgba(0,0,0,0.55); color: #ccc;
+            border: 1px solid rgba(255,255,255,0.25);
+            padding: 8px 16px; border-radius: 6px;
+            font-size: 14px; cursor: pointer;
+            font-family: sans-serif;
+            transition: background 0.2s;
         }
-    </script>
-    <script src="SyneraPhase1.js"></script>
-    <script type="text/javascript" src="qtloader.js"></script>
-  </body>
+        #fullscreen-btn:hover { background: rgba(0,0,0,0.8); color: #fff; }
+    </style>
+</head>
+<body onload="init()">
+
+<figure style="overflow:visible;" id="qtspinner">
+    <center style="margin-top:1.5em; line-height:150%">
+        <img src="qtlogo.svg" width="320" height="200" style="display:block">
+        <strong>Synera: Synergy Auto-Arena</strong>
+        <div id="qtstatus">加载中…</div>
+        <noscript>JavaScript is disabled. Please enable JavaScript to use this application.</noscript>
+    </center>
+</figure>
+
+<div id="screen"></div>
+
+<button id="fullscreen-btn" title="全屏模式">
+    ⛶ 全屏
+</button>
+
+<script src="SyneraPhase1.js"></script>
+<script src="qtloader.js"></script>
+
+<script>
+    async function init() {
+        var spinner = document.querySelector('#qtspinner');
+        var screen  = document.querySelector('#screen');
+        var status  = document.querySelector('#qtstatus');
+        var fsBtn   = document.querySelector('#fullscreen-btn');
+
+        function showUi(ui) {
+            [spinner, screen].forEach(function(el) { el.style.display = 'none'; });
+            if (screen === ui) screen.style.position = 'default';
+            ui.style.display = 'block';
+        }
+
+        // Fullscreen toggle
+        fsBtn.addEventListener('click', function() {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                document.documentElement.requestFullscreen();
+            }
+        });
+
+        // Show/hide button on fullscreen change
+        document.addEventListener('fullscreenchange', function() {
+            fsBtn.textContent = document.fullscreenElement ? '⛶ 退出全屏' : '⛶ 全屏';
+        });
+
+        try {
+            showUi(spinner);
+            status.innerHTML = '加载中…';
+
+            var instance = await qtLoad({
+                qt: {
+                    onLoaded: function() {
+                        showUi(screen);
+                        fsBtn.style.display = 'block';
+                    },
+                    onExit: function(exitData) {
+                        var msg = '应用已退出';
+                        if (exitData.code !== undefined) msg += ' code:' + exitData.code;
+                        if (exitData.text  !== undefined) msg += ' ' + exitData.text;
+                        status.innerHTML = msg;
+                        showUi(spinner);
+                    },
+                    entryFunction: window.SyneraPhase1_entry,
+                    containerElements: [screen]
+                }
+            });
+        } catch (e) {
+            status.innerHTML = '加载失败，请刷新重试';
+            console.error(e);
+        }
+    }
+</script>
+</body>
 </html>

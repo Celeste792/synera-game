@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Synera: Synergy Auto-Arena</title>
+    <style>
+        html, body {
+            padding: 0; margin: 0;
+            overflow: hidden;
+            width: 100%; height: 100%;
+            background: #0d0d1a;
+        }
+        #screen { width: 100%; height: 100%; }
+        #screen canvas { display: block; outline: none; }
+
+        /* Loading spinner */
+        #qtspinner {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: #0d0d1a; color: #c0c0d0;
+            z-index: 1000;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        .spinner-ring {
+            width: 48px; height: 48px;
+            border: 4px solid rgba(255,255,255,0.15);
+            border-top-color: #64b5f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 18px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #qtstatus { font-size: 14px; margin-top: 6px; opacity: 0.6; }
+    </style>
+</head>
+<body onload="init()">
+
+<figure id="qtspinner">
+    <div class="spinner-ring"></div>
+    <strong>Synera: Synergy Auto-Arena</strong>
+    <div id="qtstatus">加载中…</div>
+</figure>
+
+<div id="screen"></div>
+
+<script src="SyneraPhase1.js"></script>
+<script src="qtloader.js"></script>
+
+<script>
+    async function init() {
+        var spinner = document.getElementById('qtspinner');
+        var screen  = document.getElementById('screen');
+        var status  = document.getElementById('qtstatus');
+
+        function showUi(ui) {
+            spinner.style.display = 'none';
+            ui.style.display = 'block';
+        }
+
+        try {
+            showUi(spinner);
+            status.innerHTML = '加载中…';
+
+            await qtLoad({
+                qt: {
+                    containerElements: [screen],
+                    onLoaded: function() {
+                        showUi(screen);
+                    },
+                    onExit: function(exitData) {
+                        var msg = '应用已退出';
+                        if (exitData.text) msg += ': ' + exitData.text;
+                        status.innerHTML = msg;
+                        showUi(spinner);
+                    },
+                    entryFunction: window.SyneraPhase1_entry
+                }
+            });
+        } catch (e) {
+            status.innerHTML = '加载失败，请刷新页面重试';
+            console.error(e);
+        }
+    }
+</script>
+</body>
+</html>

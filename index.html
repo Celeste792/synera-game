@@ -2,19 +2,21 @@
 <html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Synera: Synergy Auto-Arena</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
-            padding: 0; margin: 0;
-            overflow: hidden;
             width: 100%; height: 100%;
+            overflow: hidden;
             background: #0d0d1a;
         }
-        #screen { width: 100%; height: 100%; }
+        #screen {
+            width: 800px; height: 600px;
+            position: absolute;
+            transform-origin: 0 0;
+        }
         #screen canvas { display: block; outline: none; }
-
-        /* Loading spinner */
         #qtspinner {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
@@ -40,8 +42,8 @@
 
 <figure id="qtspinner">
     <div class="spinner-ring"></div>
-    <strong>Synera: Synergy Auto-Arena</strong>
-    <div id="qtstatus">加载中…</div>
+    <strong>Synera 加载中…</strong>
+    <div id="qtstatus"></div>
 </figure>
 
 <div id="screen"></div>
@@ -50,37 +52,45 @@
 <script src="qtloader.js"></script>
 
 <script>
+    var GAME_W = 800, GAME_H = 600;
+
+    function layout() {
+        var s = document.getElementById('screen');
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var scale = Math.min(vw / GAME_W, vh / GAME_H);
+        s.style.transform = 'translate('
+            + ((vw - GAME_W * scale) / 2) + 'px,'
+            + ((vh - GAME_H * scale) / 2) + 'px) scale(' + scale + ')';
+    }
+    window.addEventListener('resize', layout);
+
     async function init() {
         var spinner = document.getElementById('qtspinner');
         var screen  = document.getElementById('screen');
         var status  = document.getElementById('qtstatus');
 
-        function showUi(ui) {
-            spinner.style.display = 'none';
-            ui.style.display = 'block';
-        }
+        layout();
+        spinner.style.display = 'flex';
+        status.textContent = '加载中…';
 
         try {
-            showUi(spinner);
-            status.innerHTML = '加载中…';
-
             await qtLoad({
                 qt: {
                     containerElements: [screen],
                     onLoaded: function() {
-                        showUi(screen);
+                        spinner.style.display = 'none';
+                        screen.style.display = 'block';
+                        layout();  // re-center after Qt creates canvas
                     },
-                    onExit: function(exitData) {
-                        var msg = '应用已退出';
-                        if (exitData.text) msg += ': ' + exitData.text;
-                        status.innerHTML = msg;
-                        showUi(spinner);
+                    onExit: function(d) {
+                        status.textContent = '已退出' + (d.text ? ': ' + d.text : '');
+                        spinner.style.display = 'flex';
                     },
                     entryFunction: window.SyneraPhase1_entry
                 }
             });
         } catch (e) {
-            status.innerHTML = '加载失败，请刷新页面重试';
+            status.textContent = '加载失败，请刷新重试';
             console.error(e);
         }
     }

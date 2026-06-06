@@ -1,99 +1,79 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
+<!--
+Copyright (C) 2024 The Qt Company Ltd.
+SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only
+-->
+
+<!doctype html>
+<html lang="en-us">
+  <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+    <!--Set visual viewport size for mobile devices to the device size,
+        witch results in a scale of 1 and a 1:1 mapping between CSS pixels
+        and Qt device independent pixels. -->
+    <meta name="viewport" content="width=device-width, height=device-height, user-scalable=0"/>
+
     <title>Synera: Synergy Auto-Arena</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
-            width: 100%; height: 100%;
-            overflow: hidden;
-            background: #0d0d1a;
-        }
-        #screen {
-            width: 800px; height: 600px;
-            position: absolute;
-            transform-origin: 0 0;
-        }
-        #screen canvas { display: block; outline: none; }
-        #qtspinner {
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            background: #0d0d1a; color: #c0c0d0;
-            z-index: 1000;
-            font-family: 'Microsoft YaHei', sans-serif;
-        }
-        .spinner-ring {
-            width: 48px; height: 48px;
-            border: 4px solid rgba(255,255,255,0.15);
-            border-top-color: #64b5f6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 18px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        #qtstatus { font-size: 14px; margin-top: 6px; opacity: 0.6; }
+      /* Make the html body cover the entire (visual) viewport with no scroll bars. */
+      html, body { padding: 0; margin: 0; overflow: hidden; height: 100% }
+      #screen { width: 100%; height: 100%; }
     </style>
-</head>
-<body onload="init()">
+  </head>
+  <body onload="init()">
+    <figure style="overflow:visible;" id="qtspinner">
+      <center style="margin-top:1.5em; line-height:150%">
+        <img src="qtlogo.svg" width="320" height="200" style="display:block"></img>
+        <strong>Qt for WebAssembly: SyneraPhase1</strong>
+        <div id="qtstatus"></div>
+        <noscript>JavaScript is disabled. Please enable JavaScript to use this application.</noscript>
+      </center>
+    </figure>
+    <div id="screen"></div>
 
-<figure id="qtspinner">
-    <div class="spinner-ring"></div>
-    <strong>Synera 加载中…</strong>
-    <div id="qtstatus"></div>
-</figure>
+    <script type="text/javascript">
+        async function init()
+        {
+            const spinner = document.querySelector('#qtspinner');
+            const screen = document.querySelector('#screen');
+            const status = document.querySelector('#qtstatus');
 
-<div id="screen"></div>
+            const showUi = (ui) => {
+                [spinner, screen].forEach(element => element.style.display = 'none');
+                if (screen === ui)
+                    screen.style.position = 'default';
+                ui.style.display = 'block';
+            }
 
-<script src="SyneraPhase1.js"></script>
-<script src="qtloader.js"></script>
+            try {
+                showUi(spinner);
+                status.innerHTML = 'Loading...';
 
-<script>
-    var GAME_W = 800, GAME_H = 600;
-
-    function layout() {
-        var s = document.getElementById('screen');
-        var vw = window.innerWidth, vh = window.innerHeight;
-        var scale = Math.min(vw / GAME_W, vh / GAME_H);
-        s.style.transform = 'translate('
-            + ((vw - GAME_W * scale) / 2) + 'px,'
-            + ((vh - GAME_H * scale) / 2) + 'px) scale(' + scale + ')';
-    }
-    window.addEventListener('resize', layout);
-
-    async function init() {
-        var spinner = document.getElementById('qtspinner');
-        var screen  = document.getElementById('screen');
-        var status  = document.getElementById('qtstatus');
-
-        layout();
-        spinner.style.display = 'flex';
-        status.textContent = '加载中…';
-
-        try {
-            await qtLoad({
-                qt: {
-                    containerElements: [screen],
-                    onLoaded: function() {
-                        spinner.style.display = 'none';
-                        screen.style.display = 'block';
-                        layout();  // re-center after Qt creates canvas
-                    },
-                    onExit: function(d) {
-                        status.textContent = '已退出' + (d.text ? ': ' + d.text : '');
-                        spinner.style.display = 'flex';
-                    },
-                    entryFunction: window.SyneraPhase1_entry
-                }
-            });
-        } catch (e) {
-            status.textContent = '加载失败，请刷新重试';
-            console.error(e);
+                const instance = await qtLoad({
+                    qt: {
+                        onLoaded: () => showUi(screen),
+                        onExit: exitData =>
+                        {
+                            status.innerHTML = 'Application exit';
+                            status.innerHTML +=
+                                exitData.code !== undefined ? ` with code ${exitData.code}` : '';
+                            status.innerHTML +=
+                                exitData.text !== undefined ? ` (${exitData.text})` : '';
+                            showUi(spinner);
+                        },
+                        entryFunction: window.SyneraPhase1_entry,
+                        containerElements: [screen],
+                        
+                    }
+                });
+            } catch (e) {
+                console.error(e);
+                console.error(e.stack);
+            }
         }
-    }
-</script>
-</body>
+    </script>
+    <script src="SyneraPhase1.js"></script>
+    <script type="text/javascript" src="qtloader.js"></script>
+  </body>
 </html>
